@@ -1,6 +1,9 @@
 package com.phasecat.plugin;
 
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.server.core.HytaleServer;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.modules.entity.system.ModelSystems;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import de.jcm.discordgamesdk.Core;
@@ -37,13 +40,14 @@ public class DiscordPlugin extends JavaPlugin {
     @Override
     protected void start()
     {
-        LOGGER.atInfo().log("Plugin started");
+        LOGGER.atInfo().log("Plugin started!");
         startDiscord();
     }
 
     public static void startDiscord()
     {
         new Thread(() -> {
+            LOGGER.atInfo().log("Attempting to connect to discord...");
             final CreateParams params = new CreateParams();
             params.setClientID(discordID);
             params.setFlags(CreateParams.Flags.NO_REQUIRE_DISCORD);
@@ -51,12 +55,14 @@ public class DiscordPlugin extends JavaPlugin {
             try (final Core core = new Core(params)) {
                 //core.setLogHook(LogLevel.DEBUG, (level, message) -> getLogger().at(Level.INFO).log("[Discord] ", u));
 
-                activity.assets().setLargeImage("testhytaleimage");
-                activity.assets().setLargeText("hello from hytale!");
-                try {
-                    core.activityManager().updateActivity(activity);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+                while(true) {
+                    activity.assets().setLargeImage("hytalelogo");
+                    activity.assets().setLargeText("hello from hytale!");
+                    try {
+                        core.activityManager().updateActivity(activity);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 }
 
             }
