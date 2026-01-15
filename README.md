@@ -1,4 +1,4 @@
-# Phase's Hytale Discord Rich Presence
+# Phase's Simple Discord Rich Presence
 
 A simple mod that displays Discord Rich Presence for Hytale when playing in a Singleplayer World! Planning to add more features (if possible) in the future, so this is more of a proof of concept than anything else.
 
@@ -8,4 +8,4 @@ A simple mod that displays Discord Rich Presence for Hytale when playing in a Si
 > This mod will only work when playing in Singleplayer. I have not (and can not as of now) test multiplayer but considering the way Hytale is set up, I don't believe the mod will work on a server. Very sorry :(
 
 # Contributing
-Feel free to contribute to this project as it's available under the MIT license. If you find any issues or have a suggestion, report it on [Github](https://github.com/ThePhaseCat/phases-hytale-discord-rich-presence)!
+Feel free to contribute to this project as it's available under the MIT license. If you find any issues or have a suggestion, report it on [Github](https://github.com/ThePhaseCat/phases-simple-discord-rich-presence)!
