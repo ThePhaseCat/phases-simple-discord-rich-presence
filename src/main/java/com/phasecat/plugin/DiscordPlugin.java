@@ -1,5 +1,6 @@
 package com.phasecat.plugin;
 
+import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -12,6 +13,7 @@ import de.jcm.discordgamesdk.activity.Activity;
 
 import javax.annotation.Nonnull;
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * This class serves as the entrypoint for your plugin. Use the setup method to register into game registries or add
@@ -22,8 +24,7 @@ public class DiscordPlugin extends JavaPlugin {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
     //discord stuff
-    static long discordID = 1460837855147462717L;
-
+    static long discordID = 1461185613054087209L;
     private static final Activity activity = new Activity();
 
     public DiscordPlugin(@Nonnull JavaPluginInit init) {
@@ -34,7 +35,6 @@ public class DiscordPlugin extends JavaPlugin {
     @Override
     protected void setup() {
         LOGGER.atInfo().log("Setting up plugin " + this.getName());
-        this.getCommandRegistry().registerCommand(new ExampleCommand(this.getName(), this.getManifest().getVersion().toString()));
     }
 
     @Override
@@ -57,7 +57,9 @@ public class DiscordPlugin extends JavaPlugin {
 
                 while(true) {
                     activity.assets().setLargeImage("hytalelogo");
-                    activity.assets().setLargeText("hello from hytale!");
+                    //activity.assets().setLargeText("hello from hytale!");
+                    activity.setState("Playing Hytale");
+                    activity.setDetails("Exploring Orbis");
                     try {
                         core.activityManager().updateActivity(activity);
                     } catch (Exception e) {

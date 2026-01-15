@@ -1,14 +1,14 @@
 {
-    "Group": "Example",
+    "Group": "ThePhaseCat",
     "Name": "Phase's Hytale Discord Rich Presence",
-    "Version": "0.0.2",
-    "Description": "to do",
+    "Version": "1.0.0",
+    "Description": "Adding simple Discord Rich Presence to Hytale!",
     "Authors": [
         {
             "Name": "ThePhaseCat"
         }
     ],
-    "Website": "to do",
+    "Website": "https://github.com/ThePhaseCat/phases-hytale-discord-rich-presence",
     "ServerVersion": "*",
     "Dependencies": {
         
