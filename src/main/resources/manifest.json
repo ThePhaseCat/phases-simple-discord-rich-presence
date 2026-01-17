@@ -1,7 +1,7 @@
 {
     "Group": "ThePhaseCat",
     "Name": "Phase's Simple Discord Rich Presence",
-    "Version": "1.0.0",
+    "Version": "1.1.0",
     "Description": "Adding simple Discord Rich Presence to Hytale!",
     "Authors": [
         {
@@ -18,5 +18,5 @@
     },
     "DisabledByDefault": false,
     "Main": "com.phasecat.plugin.DiscordPlugin",
-    "IncludesAssetPack": true
+    "IncludesAssetPack": false
 }
