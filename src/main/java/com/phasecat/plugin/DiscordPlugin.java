@@ -1,17 +1,25 @@
 package com.phasecat.plugin;
 
 import com.hypixel.hytale.codec.KeyedCodec;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.HytaleServer;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.event.events.ShutdownEvent;
+import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
 import com.hypixel.hytale.server.core.modules.entity.system.ModelSystems;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import de.jcm.discordgamesdk.Core;
 import de.jcm.discordgamesdk.CreateParams;
 import de.jcm.discordgamesdk.activity.Activity;
 
 import javax.annotation.Nonnull;
+import java.lang.ref.WeakReference;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -26,27 +34,60 @@ public class DiscordPlugin extends JavaPlugin {
     //discord stuff
     static long discordID = 1461185613054087209L;
     private static final Activity activity = new Activity();
+    private static Thread discordThread = null;
+    private static Core discordCore = null;
+
+    //hytale specific stuff below!
+
+    //this will be set to the reference of the player once they join server
+    private PlayerRef playerRef = null;
 
     public DiscordPlugin(@Nonnull JavaPluginInit init) {
         super(init);
-        LOGGER.atInfo().log("Hello from " + this.getName() + " version " + this.getManifest().getVersion().toString());
     }
 
     @Override
     protected void setup() {
-        LOGGER.atInfo().log("Setting up plugin " + this.getName());
+        LOGGER.atInfo().log("Setting up Phase's Simple Discord Rich Presence");
     }
 
     @Override
     protected void start()
     {
-        LOGGER.atInfo().log("Plugin started!");
-        startDiscord();
+        LOGGER.atInfo().log("Phase's Simple Discord Rich Presence starting up");
+
+        //when a player joins server, let's go hook them up to player reference
+        getEventRegistry().register(PlayerConnectEvent.class, (event) ->
+        {
+            onPlayerJoin((PlayerConnectEvent) event);
+        });
+
+        //so we can close the presence thread
+        getEventRegistry().register(ShutdownEvent.class, (event) ->
+        {
+            onServerShutdown((ShutdownEvent) event);
+        });
+
+        //startDiscord();
+    }
+
+    //hook player up to the player reference
+    public void onPlayerJoin(PlayerConnectEvent event)
+    {
+        LOGGER.atInfo().log("A player joined the server, time to start connection!");
+
+        //actually get player and store their data
+        Ref<EntityStore> ref = event.getPlayerRef().getReference();
+        assert ref != null;
+        Store<EntityStore> store = ref.getStore();
+        playerRef = store.getComponent(ref, PlayerRef.getComponentType());
+        assert playerRef != null;
+        playerRef.sendMessage(Message.parse("test to see if this worked!"));
     }
 
     public static void startDiscord()
     {
-        new Thread(() -> {
+        discordThread = new Thread(() -> {
             LOGGER.atInfo().log("Attempting to connect to discord...");
             final CreateParams params = new CreateParams();
             params.setClientID(discordID);
@@ -55,20 +96,54 @@ public class DiscordPlugin extends JavaPlugin {
             try (final Core core = new Core(params)) {
                 //core.setLogHook(LogLevel.DEBUG, (level, message) -> getLogger().at(Level.INFO).log("[Discord] ", u));
 
-                while(true) {
+                discordCore = core;
+
+                while(!Thread.currentThread().isInterrupted()) {
                     activity.assets().setLargeImage("hytalelogo");
                     //activity.assets().setLargeText("hello from hytale!");
                     activity.setState("Playing Hytale");
                     activity.setDetails("Exploring Orbis");
-                    try {
-                        core.activityManager().updateActivity(activity);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
+
+                    core.activityManager().updateActivity(activity);
+
+                    //performance reasons
+                    Thread.sleep(2000);
                 }
 
             }
-        }).start();
+            //thread interrupted while asleep
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+            }
+            //error with thread itself
+            catch (Exception e)
+            {
+                LOGGER.atWarning().log("Error with Discord Thread!");
+            }
+            //terminate the discord thread
+            finally
+            {
+                LOGGER.atInfo().log("Discord Rich Presence Stopped...");
+                discordCore = null;
+            }
+        }, "discord-rpc-thread");
+
+        discordThread.setDaemon(true);
+        discordThread.start();
     }
 
+
+    //handle the closing of the discord rich presence, just to be safe
+    public void onServerShutdown(ShutdownEvent event)
+    {
+        LOGGER.atWarning().log("Server is shutting down, terminating RPC connection!");
+
+        //actually terminate the thread
+        if(discordThread != null)
+        {
+            discordThread.interrupt();
+            discordThread = null;
+        }
+    }
 }
