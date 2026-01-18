@@ -3,8 +3,10 @@ package com.phasecat.plugin;
 import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.event.events.ShutdownEvent;
 import com.hypixel.hytale.server.core.event.events.player.AddPlayerToWorldEvent;
+import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -15,6 +17,7 @@ import de.jcm.discordgamesdk.activity.Activity;
 
 import javax.annotation.Nonnull;
 import java.time.Instant;
+import java.util.Iterator;
 
 /**
  * This class serves as the entrypoint for your plugin. Use the setup method to register into game registries or add
@@ -33,7 +36,7 @@ public class DiscordPlugin extends JavaPlugin {
     //hytale specific stuff below!
 
     //this will be set to the reference of the player once they join server
-    private PlayerRef playerRef = null;
+    private Player player = null;
 
     public DiscordPlugin(@Nonnull JavaPluginInit init) {
         super(init);
@@ -50,9 +53,9 @@ public class DiscordPlugin extends JavaPlugin {
         LOGGER.atInfo().log("Phase's Simple Discord Rich Presence starting up");
 
         //when a player joins server, let's go hook them up to player reference
-        getEventRegistry().registerGlobal(AddPlayerToWorldEvent.class, (event) ->
+        getEventRegistry().registerGlobal(PlayerReadyEvent.class, (event) ->
         {
-            onPlayerAddedToWorld((AddPlayerToWorldEvent) event);
+            onPlayerReady((PlayerReadyEvent) event);
         });
 
         //so we can close the presence thread
@@ -65,19 +68,18 @@ public class DiscordPlugin extends JavaPlugin {
     }
 
     //hook player up to the player reference once they join world
-    public void onPlayerAddedToWorld(AddPlayerToWorldEvent event)
+    public void onPlayerReady(PlayerReadyEvent event)
     {
         LOGGER.atInfo().log("A player joined the server, time to start connection!");
 
         //actually get player and store their data into player ref var
-        Holder<EntityStore> temp = event.getHolder();
-        playerRef = temp.getComponent(PlayerRef.getComponentType());
-        if(playerRef != null)
+        player = event.getPlayer();
+        if(player != null)
         {
-            //LOGGER.atInfo().log("Connected with player: " + playerRef.getUsername());
+            LOGGER.atInfo().log("Connected with player: " + player.getDisplayName());
 
             //connected with player, now we can do the fun stuff
-            startDiscord();
+            //startDiscord();
         }
         else
         {
@@ -131,6 +133,28 @@ public class DiscordPlugin extends JavaPlugin {
 
         discordThread.setDaemon(true);
         discordThread.start();
+    }
+
+    //let's see (and return) a string saying what the player is doing...
+    public String getWhatPlayerIsDoing()
+    {
+        try {
+            boolean playerCrafting = false;
+            boolean playerOnMapScreen = false;
+            boolean playerRiding = false;
+            boolean playerInCombat = false;
+
+            //crafting check
+            try{
+                LOGGER.atInfo().log("to do");
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return "to do";
     }
 
 
