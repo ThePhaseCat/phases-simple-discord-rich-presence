@@ -1,15 +1,10 @@
 package com.phasecat.plugin;
 
-import com.hypixel.hytale.codec.KeyedCodec;
-import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.Message;
-import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.event.events.ShutdownEvent;
-import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
-import com.hypixel.hytale.server.core.modules.entity.system.ModelSystems;
+import com.hypixel.hytale.server.core.event.events.player.AddPlayerToWorldEvent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -19,9 +14,7 @@ import de.jcm.discordgamesdk.CreateParams;
 import de.jcm.discordgamesdk.activity.Activity;
 
 import javax.annotation.Nonnull;
-import java.lang.ref.WeakReference;
 import java.time.Instant;
-import java.util.UUID;
 
 /**
  * This class serves as the entrypoint for your plugin. Use the setup method to register into game registries or add
@@ -57,9 +50,9 @@ public class DiscordPlugin extends JavaPlugin {
         LOGGER.atInfo().log("Phase's Simple Discord Rich Presence starting up");
 
         //when a player joins server, let's go hook them up to player reference
-        getEventRegistry().register(PlayerConnectEvent.class, (event) ->
+        getEventRegistry().registerGlobal(AddPlayerToWorldEvent.class, (event) ->
         {
-            onPlayerJoin((PlayerConnectEvent) event);
+            onPlayerAddedToWorld((AddPlayerToWorldEvent) event);
         });
 
         //so we can close the presence thread
@@ -71,18 +64,25 @@ public class DiscordPlugin extends JavaPlugin {
         //startDiscord();
     }
 
-    //hook player up to the player reference
-    public void onPlayerJoin(PlayerConnectEvent event)
+    //hook player up to the player reference once they join world
+    public void onPlayerAddedToWorld(AddPlayerToWorldEvent event)
     {
         LOGGER.atInfo().log("A player joined the server, time to start connection!");
 
-        //actually get player and store their data
-        Ref<EntityStore> ref = event.getPlayerRef().getReference();
-        assert ref != null;
-        Store<EntityStore> store = ref.getStore();
-        playerRef = store.getComponent(ref, PlayerRef.getComponentType());
-        assert playerRef != null;
-        playerRef.sendMessage(Message.parse("test to see if this worked!"));
+        //actually get player and store their data into player ref var
+        Holder<EntityStore> temp = event.getHolder();
+        playerRef = temp.getComponent(PlayerRef.getComponentType());
+        if(playerRef != null)
+        {
+            //LOGGER.atInfo().log("Connected with player: " + playerRef.getUsername());
+
+            //connected with player, now we can do the fun stuff
+            startDiscord();
+        }
+        else
+        {
+            LOGGER.atInfo().log("Failed to get player connection");
+        }
     }
 
     public static void startDiscord()
