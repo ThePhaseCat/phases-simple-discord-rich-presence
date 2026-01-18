@@ -4,18 +4,22 @@ import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.entity.entities.player.windows.Window;
 import com.hypixel.hytale.server.core.event.events.ShutdownEvent;
 import com.hypixel.hytale.server.core.event.events.player.AddPlayerToWorldEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.WorldMapTracker;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import de.jcm.discordgamesdk.Core;
 import de.jcm.discordgamesdk.CreateParams;
 import de.jcm.discordgamesdk.activity.Activity;
 
 import javax.annotation.Nonnull;
+import javax.swing.text.html.ListView;
+import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.Iterator;
 
@@ -29,14 +33,14 @@ public class DiscordPlugin extends JavaPlugin {
 
     //discord stuff
     static long discordID = 1461185613054087209L;
-    private static final Activity activity = new Activity();
+    private static Activity activity = new Activity();
     private static Thread discordThread = null;
     private static Core discordCore = null;
 
     //hytale specific stuff below!
 
     //this will be set to the reference of the player once they join server
-    private Player player = null;
+    private static Player player = null;
 
     public DiscordPlugin(@Nonnull JavaPluginInit init) {
         super(init);
@@ -79,7 +83,7 @@ public class DiscordPlugin extends JavaPlugin {
             LOGGER.atInfo().log("Connected with player: " + player.getDisplayName());
 
             //connected with player, now we can do the fun stuff
-            //startDiscord();
+            startDiscord();
         }
         else
         {
@@ -104,9 +108,10 @@ public class DiscordPlugin extends JavaPlugin {
                     activity.assets().setLargeImage("hytalelogo");
                     //activity.assets().setLargeText("hello from hytale!");
                     activity.setState("Playing Hytale");
-                    activity.setDetails("Exploring Orbis");
+                    activity.setDetails(getDiscordDetails());
 
                     core.activityManager().updateActivity(activity);
+
 
                     //performance reasons
                     Thread.sleep(2000);
@@ -121,6 +126,7 @@ public class DiscordPlugin extends JavaPlugin {
             //error with thread itself
             catch (Exception e)
             {
+                LOGGER.atWarning().log(String.valueOf(e));
                 LOGGER.atWarning().log("Error with Discord Thread!");
             }
             //terminate the discord thread
@@ -135,8 +141,9 @@ public class DiscordPlugin extends JavaPlugin {
         discordThread.start();
     }
 
-    //let's see (and return) a string saying what the player is doing...
-    public String getWhatPlayerIsDoing()
+    //let's see (and return) a string saying what the player is doing for the discord
+    //details part of the rich presence
+    public static String getDiscordDetails()
     {
         try {
             boolean playerCrafting = false;
@@ -146,15 +153,56 @@ public class DiscordPlugin extends JavaPlugin {
 
             //crafting check
             try{
-                LOGGER.atInfo().log("to do");
+                Iterator windowIterator = player.getWindowManager().getWindows().iterator();
+
+                String windowName = "";
+                //basically keep checking the player's window until the window name is
+                //either crafting or processing, then we can switch
+                while(windowIterator.hasNext())
+                {
+                    Window window = (Window) windowIterator.next();
+                    windowName = window.getClass().getSimpleName();
+
+                    if(windowName.contains("Crafting") || windowName.contains("Processing"))
+                    {
+                        playerCrafting = true;
+                        break; //get out of loop early
+                    }
+                }
             } catch (Exception e) {
                 throw new RuntimeException(e);
+            }
+
+            //map check
+            try{
+                //basically get a reference to the player's world map window and check if it's open or not
+                WorldMapTracker playerMapTracker = player.getWorldMapTracker();
+                if(playerMapTracker != null)
+                {
+                    Field mapVisible = playerMapTracker.getClass().getDeclaredField("clientHasWorldMapVisible");
+                    mapVisible.setAccessible(true);
+                    playerOnMapScreen = mapVisible.getBoolean(playerMapTracker);
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+            //actual string construction part
+            if(playerCrafting)
+            {
+                return "Crafting";
+            }
+            else if(playerOnMapScreen)
+            {
+                return "Viewing Map";
+            }
+            else //default case
+            {
+                return "Playing Hytale";
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-        return "to do";
     }
 
 
