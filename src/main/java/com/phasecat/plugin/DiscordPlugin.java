@@ -1,24 +1,25 @@
 package com.phasecat.plugin;
 
-import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.protocol.ItemWithAllMetadata;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.windows.Window;
 import com.hypixel.hytale.server.core.event.events.ShutdownEvent;
-import com.hypixel.hytale.server.core.event.events.player.AddPlayerToWorldEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
+import com.hypixel.hytale.server.core.inventory.ItemStack;
+import com.hypixel.hytale.server.core.io.PacketHandler;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.WorldMapTracker;
-import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.core.util.NotificationUtil;
 import de.jcm.discordgamesdk.Core;
 import de.jcm.discordgamesdk.CreateParams;
 import de.jcm.discordgamesdk.activity.Activity;
 
 import javax.annotation.Nonnull;
-import javax.swing.text.html.ListView;
 import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.Iterator;
@@ -41,6 +42,11 @@ public class DiscordPlugin extends JavaPlugin {
 
     //this will be set to the reference of the player once they join server
     private static Player player = null;
+
+    //for notification system
+    private static Message mainConnectedMessage = Message.raw("Discord Connected!").color("#9656ce");
+    private static Message sideConnectedMessage = Message.raw("Phase's Simple Discord Rich Presence " +
+            "has connected to Discord! Enjoy!").color("#cab2fb");
 
     public DiscordPlugin(@Nonnull JavaPluginInit init) {
         super(init);
@@ -95,6 +101,9 @@ public class DiscordPlugin extends JavaPlugin {
     {
         discordThread = new Thread(() -> {
             LOGGER.atInfo().log("Attempting to connect to discord...");
+
+
+
             final CreateParams params = new CreateParams();
             params.setClientID(discordID);
             params.setFlags(CreateParams.Flags.NO_REQUIRE_DISCORD);
@@ -103,6 +112,17 @@ public class DiscordPlugin extends JavaPlugin {
                 //core.setLogHook(LogLevel.DEBUG, (level, message) -> getLogger().at(Level.INFO).log("[Discord] ", u));
 
                 discordCore = core;
+
+                //for player notification stuff
+                PlayerRef playerRef = Universe.get().getPlayer(player.getUuid());
+                PacketHandler packetHandler = playerRef.getPacketHandler();
+                ItemWithAllMetadata icon = new ItemStack("Weapon_Sword_Thorium", 1).toPacket();
+                NotificationUtil.sendNotification(
+                        packetHandler,
+                        mainConnectedMessage,
+                        sideConnectedMessage,
+                        icon
+                );
 
                 while(!Thread.currentThread().isInterrupted()) {
                     activity.assets().setLargeImage("hytalelogo");
