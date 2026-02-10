@@ -14,6 +14,7 @@ import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.WorldMapTracker;
+import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.util.NotificationUtil;
 import de.jcm.discordgamesdk.Core;
 import de.jcm.discordgamesdk.CreateParams;
@@ -207,7 +208,22 @@ public class DiscordPlugin extends JavaPlugin {
                 throw new RuntimeException(e);
             }
 
+            //riding check
+            try{
+                int mount = player.getMountEntityId();
+                if(mount > 0 && mount != player.getNetworkId())
+                {
+                    playerRiding = true;
+                }
+            } catch (Exception e){
+                throw new RuntimeException(e);
+            }
+
             //actual string construction part
+            if(playerRiding)
+            {
+                return "Riding";
+            }
             if(playerCrafting)
             {
                 return "Crafting";
@@ -225,6 +241,72 @@ public class DiscordPlugin extends JavaPlugin {
         }
     }
 
+    //find and get the name of the zone the player is in
+    public static String getPlayerZoneName()
+    {
+        try{
+            WorldMapTracker playerMapTracker = player.getWorldMapTracker();
+            if(playerMapTracker != null)
+            {
+                String biome = playerMapTracker.getCurrentBiomeName();
+                if(biome != null && !biome.isEmpty())
+                {
+                    String biomeName = formatBiomeName(biome);
+                    return "Exploring " + biomeName;
+                }
+            }
+
+            WorldChunk chunk = player.getTransformComponent().getChunk();
+            if(chunk != null)
+            {
+                String worldName = chunk.getWorld().getName();
+                if("default".equals(worldName))
+                {
+                    return "Exploring Orbis";
+                }
+
+                return "Exploring " + worldName;
+            }
+        } catch (IllegalStateException e)
+        {
+            return "Loading, please wait...";
+        }
+        catch (Exception e)
+        {
+            LOGGER.atInfo().log("Caught exception in get player zone name...");
+        }
+
+        return "Exploring Orbis";
+    }
+
+    //format the biome name since it doesn't look good by default
+    public static String formatBiomeName(String originalName)
+    {
+        if(originalName == null)
+        {
+            return "";
+        }
+        else
+        {
+            String[] words = originalName.replace("_", " ").split(" ");
+            StringBuilder sb = new StringBuilder();
+            String[] stringBuilt = words;
+            int length = words.length;
+
+            for(int i = 0; i < length; i++)
+            {
+                String word = stringBuilt[i];
+                if (word.length() > 0)
+                {
+                    sb.append(Character.toUpperCase(word.charAt(0)));
+                    sb.append(word.substring(1).toLowerCase());
+                    sb.append(" ");
+                }
+            }
+
+            return sb.toString().trim();
+        }
+    }
 
     //handle the closing of the discord rich presence, just to be safe
     public void onServerShutdown(ShutdownEvent event)
