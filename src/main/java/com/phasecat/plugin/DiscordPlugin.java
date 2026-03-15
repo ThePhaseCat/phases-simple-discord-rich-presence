@@ -2,6 +2,7 @@ package com.phasecat.plugin;
 
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.ItemWithAllMetadata;
+import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.windows.Window;
@@ -43,6 +44,10 @@ public class DiscordPlugin extends JavaPlugin {
 
     //this will be set to the reference of the player once they join server
     private static Player player = null;
+
+
+    private static Vector3d playerLastPosition = null;
+    private static long playerLastMovementTime = System.currentTimeMillis();
 
     //for notification system
     private static Message mainConnectedMessage = Message.raw("Discord Connected!").color("#9656ce");
@@ -170,7 +175,7 @@ public class DiscordPlugin extends JavaPlugin {
             boolean playerCrafting = false;
             boolean playerOnMapScreen = false;
             boolean playerRiding = false;
-            boolean playerInCombat = false;
+            boolean playerAFK = false;
 
             //crafting check
             try{
@@ -219,12 +224,32 @@ public class DiscordPlugin extends JavaPlugin {
                 throw new RuntimeException(e);
             }
 
-            //actual string construction part
-            if(playerRiding)
-            {
-                return "Riding";
+            //afk check
+            try {
+                Vector3d playerCurrentPosition = player.getTransformComponent().getPosition();
+                if (playerLastPosition != null) {
+                    if (playerCurrentPosition.distanceTo(playerLastPosition) < 0.05D) {
+                        if (System.currentTimeMillis() - playerLastMovementTime > 180000L) {
+                            playerAFK = true;
+                        }
+                    } else {
+                        playerLastMovementTime = System.currentTimeMillis();
+                    }
+                } else {
+                    playerLastMovementTime = System.currentTimeMillis();
+                }
+
+                playerLastPosition = new Vector3d(playerCurrentPosition.x, playerCurrentPosition.y, playerCurrentPosition.z);
+            } catch (Exception e) {
+                //do nothing and hope this does not fail
             }
-            if(playerCrafting)
+
+            //actual string construction part
+            if(playerAFK)
+            {
+                return "AFK";
+            }
+            else if(playerCrafting)
             {
                 return "Crafting";
             }
@@ -232,9 +257,13 @@ public class DiscordPlugin extends JavaPlugin {
             {
                 return "Viewing Map";
             }
+            else if(playerRiding)
+            {
+                return "Riding";
+            }
             else //default case
             {
-                return "Playing Hytale";
+                return getPlayerZoneName();
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -267,7 +296,8 @@ public class DiscordPlugin extends JavaPlugin {
 
                 return "Exploring " + worldName;
             }
-        } catch (IllegalStateException e)
+        }
+        catch (IllegalStateException e)
         {
             return "Loading, please wait...";
         }
@@ -276,7 +306,7 @@ public class DiscordPlugin extends JavaPlugin {
             LOGGER.atInfo().log("Caught exception in get player zone name...");
         }
 
-        return "Exploring Orbis";
+        return "Playing Hytale";
     }
 
     //format the biome name since it doesn't look good by default
