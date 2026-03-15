@@ -41,6 +41,7 @@ public class DiscordPlugin extends JavaPlugin {
     private static Core discordCore = null;
 
     //hytale specific stuff below!
+    private static Field mapVisibleField;
 
     //this will be set to the reference of the player once they join server
     private static Player player = null;
@@ -93,7 +94,16 @@ public class DiscordPlugin extends JavaPlugin {
         if(player != null)
         {
             LOGGER.atInfo().log("Connected with player: " + player.getDisplayName());
-
+            try{
+                WorldMapTracker tracker = player.getWorldMapTracker();
+                if(tracker != null && mapVisibleField == null)
+                {
+                    mapVisibleField = tracker.getClass().getDeclaredField("clientHasWorldMapVisible");
+                    mapVisibleField.setAccessible(true);
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
             //connected with player, now we can do the fun stuff
             startDiscord();
         }
@@ -130,14 +140,24 @@ public class DiscordPlugin extends JavaPlugin {
                         icon
                 );
 
+
+                String lastDetails = "";
+
                 while(!Thread.currentThread().isInterrupted()) {
-                    activity.assets().setLargeImage("hytalelogo");
-                    //activity.assets().setLargeText("hello from hytale!");
-                    activity.setState("Playing Hytale");
-                    activity.setDetails(getDiscordDetails());
+                    String newDetails = getDiscordDetails();
+                    if(!newDetails.equals(lastDetails))
+                    {
+                        activity.assets().setLargeImage("hytalelogo");
+                        //activity.assets().setLargeText("hello from hytale!");
+                        activity.setState("Playing Hytale");
+                        activity.setDetails(getDiscordDetails());
 
-                    core.activityManager().updateActivity(activity);
+                        core.activityManager().updateActivity(activity);
 
+                        core.runCallbacks();
+
+                        lastDetails = newDetails;
+                    }
 
                     //performance reasons
                     Thread.sleep(2000);
@@ -203,11 +223,9 @@ public class DiscordPlugin extends JavaPlugin {
             try{
                 //basically get a reference to the player's world map window and check if it's open or not
                 WorldMapTracker playerMapTracker = player.getWorldMapTracker();
-                if(playerMapTracker != null)
+                if(playerMapTracker != null && mapVisibleField != null)
                 {
-                    Field mapVisible = playerMapTracker.getClass().getDeclaredField("clientHasWorldMapVisible");
-                    mapVisible.setAccessible(true);
-                    playerOnMapScreen = mapVisible.getBoolean(playerMapTracker);
+                    playerOnMapScreen = mapVisibleField.getBoolean(playerMapTracker);
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);

@@ -57,7 +57,7 @@ repositories {
 // the official launcher for now.
 dependencies {
     //MAKE SURE TO CHANGE THAT TO compileOnly or else you pack the entire jar...
-    implementation(files("$hytaleHome/install/$patchline/package/game/latest/Server/HytaleServer.jar"))
+    compileOnly(files("$hytaleHome/install/$patchline/package/game/latest/Server/HytaleServer.jar"))
     implementation('com.github.JnCrMx:discord-game-sdk4j:08b2bf45a6')
 }
 
